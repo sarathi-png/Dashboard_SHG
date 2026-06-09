@@ -1,0 +1,2200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SHG Analytics Pro | National Rural Livelihoods Mission Dashboard</title>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- Premium Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Playfair+Display:wght@600;700;800&amp;display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body data-theme="dark">
+    <!-- Skip to content link for accessibility -->
+    <a href="#shg-dashboard-container" class="skip-link">Skip to main content</a>
+
+    <!-- 3D Hub Portal -->
+    <div id="hub-portal">
+      <div class="hub-background"></div>
+      <h1 class="hub-title">National Rural Livelihoods Mission</h1>
+      <div class="hub-cards-container">
+        <div class="hub-card" onclick="openDashboard('shg')">
+          <div class="hub-card-icon">🏛️</div>
+          <h2 class="hub-card-title">SHG Analytics</h2>
+          <p class="hub-card-desc">
+            Comprehensive analysis of Self Help Groups, financial inclusion, and block-wise performance metrics.
+          </p>
+          <button class="hub-card-btn">Enter Dashboard</button>
+        </div>
+        <div class="hub-card" onclick="openDashboard('member')">
+          <div class="hub-card-icon">👥</div>
+          <h2 class="hub-card-title">Member Analysis</h2>
+          <p class="hub-card-desc">
+            Deep dive into member demographics, social categories, and individual livelihood tracking.
+          </p>
+          <button class="hub-card-btn">Enter Dashboard</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Back to Hub Button -->
+    <div id="backToHub" class="back-to-hub-btn" onclick="returnToHub()" role="button" tabindex="0" aria-label="Return to hub portal">
+      <span>↩</span>
+    </div>
+
+    <!-- Member Dashboard View (Full Screen Iframe) -->
+    <div id="member-dashboard-view">
+      <iframe id="member-frame" src="about:blank"></iframe>
+    </div>
+
+    <!-- Main SHG Dashboard Content (Wrapped) -->
+    <div id="shg-dashboard-container" class="dashboard-container dashboard-hidden">
+      <!-- Theme Toggle -->
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle between dark and light theme">🌙</button>
+
+      <!-- Toast Notification -->
+      <div id="toast" class="toast">
+        <span class="toast-icon">✅</span>
+        <span class="toast-message" id="toastMessage">Export successful!</span>
+      </div>
+
+      <!-- Overlay & Popup -->
+      <div id="overlay" class="overlay"></div>
+      <div id="successPopup" class="success-popup">
+        <div class="success-icon">✓</div>
+        <h2 style="font-family: var(--font-display); font-size: 1.8rem; color: var(--accent-gold); margin-bottom: 12px">
+          Analysis Complete!
+        </h2>
+        <p style="color: var(--text-secondary); margin-bottom: 28px; font-size: 1rem">
+          Your SHG data has been processed successfully. Dashboard is ready.
+        </p>
+        <button class="btn-primary" onclick="closeSuccessPopup()">View Dashboard</button>
+      </div>
+
+      <!-- Government Header -->
+      <header class="gov-header"></header>
+
+      <div class="container">
+        <!-- Upload Section -->
+        <div
+          class="upload-section"
+          id="uploadSection"
+          style="
+            max-width: 600px;
+            margin: 0 auto 40px;
+            text-align: center;
+            padding: 40px;
+            background: var(--bg-card);
+            border: 1px dashed var(--accent-gold);
+            border-radius: 24px;
+          "
+        >
+          <div class="upload-icon" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.8">📂</div>
+          <h2
+            class="upload-title"
+            style="font-family: var(--font-display); font-size: 1.8rem; color: var(--text-primary); margin-bottom: 10px"
+          >
+            Upload SHG Data File
+          </h2>
+          <p class="upload-desc" style="color: var(--text-secondary); margin-bottom: 30px">
+            Upload your TN NRLM MIS Excel (.xlsx) or CSV file for comprehensive analysis.
+          </p>
+
+          <div class="upload-controls" style="display: flex; gap: 12px; justify-content: center; align-items: center">
+            <input
+              type="file"
+              id="excelFile"
+              accept=".xlsx,.xls,.csv"
+              style="
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                padding: 10px 20px;
+                border: 1px solid var(--border-primary);
+                border-radius: 8px;
+              "
+            />
+            <button
+              class="btn-primary"
+              id="uploadBtn"
+              onclick="processExcel()"
+              style="
+                padding: 12px 24px;
+                background: var(--gradient-accent);
+                border: none;
+                border-radius: 8px;
+                color: var(--primary-900);
+                font-weight: 600;
+                cursor: pointer;
+                transition: transform 0.2s;
+              "
+            >
+              🔍 Analyze Data
+            </button>
+          </div>
+          <div class="loading-spinner" id="loadingSpinner"></div>
+          <p
+            id="statusText"
+            style="margin-top: 20px; color: var(--accent-gold); font-family: var(--font-mono); font-weight: 500"
+              ></p>
+        </div>
+
+        <!-- Sidebar Navigation & Main Content -->
+        <div class="sidebar-layout" id="sidebarLayout" style="display: none;">
+          <!-- Vertical Sidebar -->
+          <nav class="sidebar" id="navTabs" role="tablist" aria-label="Dashboard sections">
+            <button class="tab-btn active" data-tab="overview" onclick="showSection('overview', this)" role="tab" aria-selected="true">
+              <span class="tab-icon">📊</span> Overview
+            </button>
+            <button class="tab-btn" data-tab="fyFormation" onclick="showSection('fyFormation', this)" role="tab" aria-selected="false">
+              <span class="tab-icon">📅</span> FY Formation
+            </button>
+            <button class="tab-btn" data-tab="financial" onclick="showSection('financial', this)" role="tab" aria-selected="false">
+              <span class="tab-icon">💰</span> Financial
+            </button>
+            <button class="tab-btn" data-tab="block" onclick="showSection('block', this)" role="tab" aria-selected="false">
+              <span class="tab-icon">🏘️</span> Blocks
+            </button>
+            <button class="tab-btn" data-tab="bank" onclick="showSection('bank', this)" role="tab" aria-selected="false">
+              <span class="tab-icon">🏦</span> Banks
+            </button>
+            <button class="tab-btn" data-tab="member" onclick="showSection('member', this)" role="tab" aria-selected="false">
+              <span class="tab-icon">👥</span> Members
+            </button>
+            <button class="tab-btn" data-tab="livelihood" onclick="showSection('livelihood', this)" role="tab" aria-selected="false">
+              <span class="tab-icon">🌾</span> Livelihood
+            </button>
+            <button class="tab-btn" data-tab="geo" onclick="showSection('geo', this)" role="tab" aria-selected="false">
+              <span class="tab-icon">🗺️</span> Geography
+            </button>
+            <button class="tab-btn" data-tab="insights" onclick="showSection('insights', this)" role="tab" aria-selected="false">
+              <span class="tab-icon">🤖</span> AI Insights
+            </button>
+          </nav>
+
+          <!-- Main Content Area -->
+          <main class="main-content">
+            <!-- All Sections -->
+            <div id="overviewSection" class="section hidden-section"></div>
+            <div id="fyFormationSection" class="section hidden-section"></div>
+            <div id="financialSection" class="section hidden-section"></div>
+            <div id="blockSection" class="section hidden-section"></div>
+            <div id="bankSection" class="section hidden-section"></div>
+            <div id="memberSection" class="section hidden-section"></div>
+            <div id="livelihoodSection" class="section hidden-section"></div>
+            <div id="geoSection" class="section hidden-section"></div>
+            <div id="insightsSection" class="section hidden-section"></div>
+          </main>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="gov-footer">
+        <div class="gov-footer-content">
+          <div class="gov-footer-logo">
+            <span style="font-size: 1.5rem">🏛️</span>
+            <span style="font-family: var(--font-display); font-weight: 700; color: var(--text-primary)">
+              SHG Analytics Pro
+            </span>
+          </div>
+          <p class="gov-footer-text">
+            A Digital India Initiative | National Rural Livelihoods Mission
+            <br />
+            Ministry of Rural Development, Government of India
+          </p>
+          <div class="gov-footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Help &amp; Support</a>
+            <a href="#">Contact Us</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <!-- End of shg-dashboard-container -->
+
+    <script src="dashboard.js"></script>
+    <script>
+      // ============ 3D PORTAL LOGIC ============
+      function openDashboard(type) {
+        const hub = document.getElementById("hub-portal");
+        const backBtn = document.getElementById("backToHub");
+        const shgContainer = document.getElementById("shg-dashboard-container");
+        const memberView = document.getElementById("member-dashboard-view");
+        const memberFrame = document.getElementById("member-frame");
+
+        // Hide Hub
+        hub.classList.add("hidden-portal");
+        backBtn.classList.add("visible");
+
+        if (type === "shg") {
+          // Show SHG Dashboard
+          shgContainer.classList.remove("dashboard-hidden");
+          // Ensure Member View is hidden
+          memberView.classList.remove("active-view");
+        } else if (type === "member") {
+          // Show Member Dashboard
+          memberView.classList.add("active-view");
+          shgContainer.classList.add("dashboard-hidden");
+
+          // Load iframe if empty
+          if (memberFrame.src === "about:blank") {
+            memberFrame.src = "Member_Dashboard.html";
+          }
+        }
+      }
+
+      function returnToHub() {
+        const hub = document.getElementById("hub-portal");
+        const backBtn = document.getElementById("backToHub");
+        const shgContainer = document.getElementById("shg-dashboard-container");
+        const memberView = document.getElementById("member-dashboard-view");
+
+        // Show Hub
+        hub.classList.remove("hidden-portal");
+        backBtn.classList.remove("visible");
+
+        // Hide Dashboards
+        shgContainer.classList.add("dashboard-hidden");
+        memberView.classList.remove("active-view");
+      }
+
+      // ============ CONFIGURATION ============
+      let originalData = [];
+      let analyzedStats = null;
+      let charts = {};
+      let map = null;
+      let selectedFY = "2025-26";
+
+      const COL_MAP = {
+        Block: "block",
+        "SHG Name": "shgName",
+        "SHG Code": "shgCode",
+        "Status (Active/Inactive)": "status",
+        "Date of Formation": "formationDate",
+        "1st Account Number (Default)": "bankAccount",
+        "1st Bank Name": "bankName",
+        "1st Branch Name": "branchName",
+        "Active Members": "members",
+        "Savings Amount": "savings",
+        District: "district",
+        "Gram Panchayat": "gramPanchayat",
+        Village: "village",
+        "SHG Category": "category",
+        "Special SHG Type": "specialType",
+        "Primary Livelihoods": "primaryLivelihood",
+        "Secondary Livelihoods": "secondaryLivelihood",
+        "Tertiary Livelihoods": "tertiaryLivelihood",
+        "Meeting Frequency": "meetingFreq",
+        "Approval Status": "approvalStatus",
+      };
+
+      if (window.Chart && window.ChartDataLabels) {
+        Chart.register(ChartDataLabels);
+      }
+
+      // ============ TOAST NOTIFICATION ============
+      function showToast(message, isError = false) {
+        const toast = document.getElementById("toast");
+        const toastMessage = document.getElementById("toastMessage");
+        const toastIcon = toast.querySelector(".toast-icon");
+
+        toastMessage.textContent = message;
+        toastIcon.textContent = isError ? "❌" : "✅";
+        toast.classList.toggle("error", isError);
+        toast.classList.add("show");
+
+        setTimeout(() => {
+          toast.classList.remove("show");
+        }, 3000);
+      }
+
+      // ============ THEME TOGGLE ============
+      function toggleTheme() {
+        const body = document.body;
+        const next = body.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        body.setAttribute("data-theme", next);
+        document.querySelector(".theme-toggle").textContent = next === "dark" ? "🌙" : "☀️";
+        localStorage.setItem("theme", next);
+        if (typeof updateChartsTheme === 'function') updateChartsTheme();
+      }
+
+      function updateChartsTheme() {
+        const isDark = document.body.getAttribute("data-theme") === "dark";
+        const textColor = isDark ? '#ffffff' : '#1e293b';
+        const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+        const tickColor = isDark ? '#e2e8f0' : '#64748b';
+        Object.keys(charts).forEach(key => {
+          const chart = charts[key];
+          if (chart) {
+            if (chart.options.plugins?.legend?.labels) {
+              chart.options.plugins.legend.labels.color = textColor;
+            }
+            if (chart.options.scales?.x) {
+              chart.options.scales.x.ticks.color = tickColor;
+              chart.options.scales.x.grid.color = gridColor;
+            }
+            if (chart.options.scales?.y) {
+              chart.options.scales.y.ticks.color = tickColor;
+              chart.options.scales.y.grid.color = gridColor;
+            }
+            chart.update();
+          }
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const theme = localStorage.getItem("theme") || "dark";
+        document.body.setAttribute("data-theme", theme);
+        const toggle = document.querySelector(".theme-toggle");
+        if (toggle) toggle.textContent = theme === "dark" ? "🌙" : "☀️";
+
+        // Setup drag-and-drop for file upload
+        const uploadEl = document.getElementById("uploadSection");
+        const fileInput = document.getElementById("excelFile");
+        if (uploadEl && fileInput && window.setupDragDrop) {
+          setupDragDrop(uploadEl, fileInput, (file) => {
+            if (file) processExcel();
+          });
+        }
+      });
+
+      // ============ UTILITY FUNCTIONS ============
+      function getCol(row, key) {
+        for (const [excelCol, mappedKey] of Object.entries(COL_MAP)) {
+          if (mappedKey === key && row[excelCol] !== undefined) return row[excelCol];
+        }
+        const keys = Object.keys(row);
+        for (const k of keys) {
+          if (k.toLowerCase().includes(key.toLowerCase())) return row[k];
+        }
+        return "";
+      }
+
+      function parseDate(val) {
+        if (!val) return null;
+        if (typeof val === "number") {
+          const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+          return new Date(d.getFullYear(), d.getDate() - 1, d.getMonth() + 1);
+        }
+        const str = String(val).trim();
+        if (/^\d{4,5}$/.test(str)) {
+          const num = parseInt(str, 10);
+          if (num > 10000) {
+            const d = new Date(Math.round((num - 25569) * 86400 * 1000));
+            return new Date(d.getFullYear(), d.getDate() - 1, d.getMonth() + 1);
+          }
+        }
+        const parts = str.split(/[-/]/);
+        if (parts.length === 3) {
+          let day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          let year = parseInt(parts[2], 10);
+          if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+            if (day > 31) {
+              const tmp = day; day = year; year = tmp;
+            }
+            if (year < 100) year += 2000;
+            return new Date(year, month, day);
+          }
+        }
+        const parsed = new Date(str);
+        return isNaN(parsed) ? null : parsed;
+      }
+
+      function getFYDateRange(fy) {
+        const parts = fy.split("-");
+        const startYear = parseInt(parts[0], 10);
+        const endYear = parseInt(parts[1], 10);
+        const fullEnd = 2000 + endYear;
+        return {
+          start: new Date(startYear, 3, 1),
+          end: new Date(fullEnd, 3, 1),
+        };
+      }
+
+      function isInFY(date, fy) {
+        if (!date || isNaN(date)) return false;
+        const range = getFYDateRange(fy);
+        return date >= range.start && date < range.end;
+      }
+
+      function isCurrentFY(date) {
+        return isInFY(date, "2025-26");
+      }
+
+      function computeFYStats(data, fy) {
+        const range = getFYDateRange(fy);
+        const fyStats = {
+          fyFormed: 0,
+          fyWomanRegular: 0,
+          fySpecial: 0,
+          fySpecialTypes: {},
+          fyMonthly: {},
+          blocks: {},
+        };
+        for (const row of data) {
+          if (row.status !== "Active") continue;
+          const fd = row.formationDate;
+          if (!fd || isNaN(fd) || fd < range.start || fd >= range.end) continue;
+          fyStats.fyFormed++;
+          const monthKey = fd.toLocaleString("default", { month: "short", year: "numeric" });
+          fyStats.fyMonthly[monthKey] = (fyStats.fyMonthly[monthKey] || 0) + 1;
+          const st = (row.specialType || "").trim();
+          const isWomanReg = st === "" || st === "-" || st.toLowerCase() === "undefined";
+          if (isWomanReg) {
+            fyStats.fyWomanRegular++;
+          } else {
+            fyStats.fySpecial++;
+            fyStats.fySpecialTypes[st] = (fyStats.fySpecialTypes[st] || 0) + 1;
+          }
+          const block = (row.block || "Unknown").toString().trim().toUpperCase();
+          if (!fyStats.blocks[block]) {
+            fyStats.blocks[block] = { fyWoman: 0, fySpecial: 0, fyFormed: 0 };
+          }
+          fyStats.blocks[block].fyFormed++;
+          if (isWomanReg) fyStats.blocks[block].fyWoman++;
+          else fyStats.blocks[block].fySpecial++;
+        }
+        return fyStats;
+      }
+
+      function debugFYStats(data, fy) {
+        const range = getFYDateRange(fy);
+        const stages = {
+          total: data.length,
+          inactive: 0,
+          active: 0,
+          activeNoDate: 0,
+          activeDateBefore: 0,
+          activeDateAfter: 0,
+          activeInRange: 0,
+          womanRegular: 0,
+          special: 0,
+        };
+        const inactiveInFY = [];
+        const activeInRangeRows = [];
+        for (const row of data) {
+          const isActive = row.status === "Active";
+          if (!isActive) {
+            stages.inactive++;
+            const fd = row.formationDate;
+            if (fd && !isNaN(fd) && fd >= range.start && fd < range.end) {
+              inactiveInFY.push(row);
+            }
+            continue;
+          }
+          stages.active++;
+          const fd = row.formationDate;
+          if (!fd || isNaN(fd)) {
+            stages.activeNoDate++;
+            continue;
+          }
+          if (fd < range.start) {
+            stages.activeDateBefore++;
+            continue;
+          }
+          if (fd >= range.end) {
+            stages.activeDateAfter++;
+            continue;
+          }
+          stages.activeInRange++;
+          activeInRangeRows.push(row);
+          const st = (row.specialType || "").trim();
+          const isWomanReg = st === "" || st === "-" || st.toLowerCase() === "undefined";
+          if (isWomanReg) stages.womanRegular++;
+          else stages.special++;
+        }
+        const badParse = [];
+        const beforeRange = [];
+        const afterRange = [];
+        const nonWomanRegRows = [];
+        for (const row of activeInRangeRows) {
+          const fd = row.formationDate;
+          const raw = row._raw;
+          const dateStr = raw ? String(raw.formationDate || raw.formedDate || raw.formed_on || "") : "";
+          const isNumeric = /^\d{4,5}$/.test(dateStr.trim());
+          const isTextSerial = /^\d{4,5}$/.test(dateStr.trim());
+          const st = (row.specialType || "").trim();
+          const isWomanReg = st === "" || st === "-" || st.toLowerCase() === "undefined";
+          if (!isWomanReg) {
+            nonWomanRegRows.push({ code: row.shgCode, type: st, rawDate: dateStr, parsed: fd.toISOString() });
+          }
+        }
+        const fyLabel = fy;
+        const sample = {
+          fyLabel,
+          rangeStart: range.start.toISOString(),
+          rangeEnd: range.end.toISOString(),
+          stages,
+          inactiveInFYCount: inactiveInFY.length,
+          inactiveInFYSample: inactiveInFY.slice(0, 5).map(r => ({ code: r.shgCode, name: r.shgName, rawDate: (r._raw && String(r._raw.formationDate || r._raw.formedDate || r._raw.formed_on || "")) })),
+          nonWomanRegRows,
+          activeInRangeCount: stages.activeInRange,
+        };
+        console.log("=== DEBUG FY STATS ===");
+        console.log(JSON.stringify(sample, null, 2));
+        console.table(stages);
+        return sample;
+      }
+
+      function parseNumber(val) {
+        if (val === null || val === undefined || val === "" || val === "-") return 0;
+        if (typeof val === "number") return val;
+        return parseFloat(String(val).replace(/[^0-9.-]/g, "")) || 0;
+      }
+
+      function formatNumber(num) {
+        if (num >= 10000000) return (num / 10000000).toFixed(2) + " Cr";
+        if (num >= 100000) return (num / 100000).toFixed(2) + " L";
+        if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+        return num.toLocaleString();
+      }
+
+      function getThemeColors() {
+        const isDark = document.body.getAttribute("data-theme") === "dark";
+        return {
+          accent: "#d4a853",
+          primary: "#3d7cb8",
+          success: "#059669",
+          danger: "#dc2626",
+          warning: "#f59e0b",
+          purple: "#7c3aed",
+          cyan: "#06b6d4",
+          pink: "#ec4899",
+          text: isDark ? "#f8fafc" : "#0f172a",
+          grid: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+        };
+      }
+
+      function cleanData(rows) {
+        const seenCodes = new Set();
+        const cleaned = [];
+        for (const row of rows) {
+          const shgCodeRaw = getCol(row, "shgCode");
+          const shgCode = String(shgCodeRaw || "").trim();
+          if (!shgCode) continue;
+          if (seenCodes.has(shgCode)) continue;
+          seenCodes.add(shgCode);
+
+          const blockRaw = getCol(row, "block");
+          const block = String(blockRaw || "Unknown").trim().toUpperCase();
+
+          const statusRaw = getCol(row, "status");
+          const statusStr = String(statusRaw || "").trim().toLowerCase();
+          let status = "Active";
+          if (!statusStr) {
+            status = "Inactive";
+          } else if (statusStr.includes("inactive") || statusStr === "i" || statusStr === "n") {
+            status = "Inactive";
+          } else if (statusStr.includes("active") || statusStr === "a" || statusStr === "y") {
+            status = "Active";
+          }
+
+          const formationDate = parseDate(getCol(row, "formationDate"));
+          const bankAccount = String(getCol(row, "bankAccount") || "").trim();
+          const bankName = String(getCol(row, "bankName") || "").trim();
+          const branchName = String(getCol(row, "branchName") || "").trim();
+          const members = parseNumber(getCol(row, "members"));
+          const savings = parseNumber(getCol(row, "savings"));
+          const district = String(getCol(row, "district") || "").trim();
+          const gramPanchayat = String(getCol(row, "gramPanchayat") || "").trim();
+          const village = String(getCol(row, "village") || "").trim();
+          const category = String(getCol(row, "category") || "").trim();
+          const specialType = String(getCol(row, "specialType") || "").trim();
+          const primaryLivelihood = String(getCol(row, "primaryLivelihood") || "").trim();
+          const secondaryLivelihood = String(getCol(row, "secondaryLivelihood") || "").trim();
+          const tertiaryLivelihood = String(getCol(row, "tertiaryLivelihood") || "").trim();
+          const meetingFreq = String(getCol(row, "meetingFreq") || "").trim();
+          const approvalStatus = String(getCol(row, "approvalStatus") || "").trim();
+
+          const isEmptyRow =
+            !block &&
+            !district &&
+            !gramPanchayat &&
+            !village &&
+            !bankAccount &&
+            !bankName &&
+            !category &&
+            !primaryLivelihood &&
+            !savings &&
+            !members;
+          if (isEmptyRow) continue;
+
+          cleaned.push({
+            shgCode,
+            block,
+            status,
+            formationDate,
+            bankAccount,
+            bankName,
+            branchName,
+            members,
+            savings,
+            district,
+            gramPanchayat,
+            village,
+            category,
+            specialType,
+            primaryLivelihood,
+            secondaryLivelihood,
+            tertiaryLivelihood,
+            meetingFreq,
+            approvalStatus,
+          });
+        }
+        return cleaned;
+      }
+
+      // ============ SECTION NAVIGATION ============
+      function showSection(sectionId, tab) {
+        const sections = [
+          "overview",
+          "fyFormation",
+          "financial",
+          "block",
+          "bank",
+          "member",
+          "livelihood",
+          "geo",
+          "insights",
+        ];
+        sections.forEach((s) => {
+          const el = document.getElementById(s + "Section");
+          if (el) el.classList.add("hidden-section");
+        });
+        const targetSection = document.getElementById(sectionId + "Section");
+        if (targetSection) targetSection.classList.remove("hidden-section");
+
+        // Handle both old nav-tab and new sidebar tab-btn classes
+        document.querySelectorAll(".nav-tab, .tab-btn").forEach((el) => {
+          el.classList.remove("active");
+          el.setAttribute("aria-selected", "false");
+        });
+        if (tab) {
+          tab.classList.add("active");
+          tab.setAttribute("aria-selected", "true");
+        }
+
+        // Scroll to top of main content
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+          mainContent.scrollTop = 0;
+        }
+
+        if (sectionId === "geo" && map) setTimeout(() => map.invalidateSize(), 100);
+      }
+
+      // ============ DATA ANALYSIS ============
+      function analyzeData(data) {
+        const stats = {
+          total: data.length,
+          active: 0,
+          inactive: 0,
+          fyFormed: 0,
+          fyWomanRegular: 0,
+          fySpecial: 0,
+          fySpecialTypes: {},
+          fyMonthly: {},
+          fyYearly: {},
+          totalMembers: 0,
+          totalSavings: 0,
+          savingsBrackets: { "₹0": 0, "₹1-1K": 0, "₹1K-5K": 0, "₹5K-10K": 0, "₹10K-50K": 0, "₹50K+": 0 },
+          bankLinked: 0,
+          blocks: {},
+          banks: {},
+          branches: {},
+          livelihoods: {},
+          meetingFreq: {},
+          approvalStatus: {},
+          memberCompliance: { womanLow: 0, specialLow: 0, total: 0 },
+          geoData: { districts: {}, gramPanchayats: {}, villages: {} },
+          approvalRate: 0,
+          bankCoverage: 0,
+        };
+
+        for (const row of data) {
+          const isActive = row.status === "Active";
+
+          if (isActive) {
+            stats.active++;
+
+            const block = (row.block || "Unknown").toString().trim().toUpperCase();
+            const members = row.members || 0;
+            const savings = row.savings || 0;
+            const bankAccount = row.bankAccount || "";
+            const bankName = row.bankName || "";
+            const branchName = row.branchName || "";
+            const formationDate = row.formationDate || null;
+            const specialType = row.specialType || "";
+            const primaryLivelihood = row.primaryLivelihood || "";
+            const meetingFreq = row.meetingFreq || "";
+            const approvalStatus = row.approvalStatus || "";
+            const district = row.district || "";
+            const gp = row.gramPanchayat || "";
+            const village = row.village || "";
+
+            stats.totalMembers += members;
+            stats.totalSavings += savings;
+
+            if (savings === 0) stats.savingsBrackets["₹0"]++;
+            else if (savings <= 1000) stats.savingsBrackets["₹1-1K"]++;
+            else if (savings <= 5000) stats.savingsBrackets["₹1K-5K"]++;
+            else if (savings <= 10000) stats.savingsBrackets["₹5K-10K"]++;
+            else if (savings <= 50000) stats.savingsBrackets["₹10K-50K"]++;
+            else stats.savingsBrackets["₹50K+"]++;
+
+            const hasBank =
+              bankAccount.length > 5 && !/^0+$/.test(bankAccount) && bankAccount.toLowerCase() !== "na";
+            if (hasBank) stats.bankLinked++;
+
+            if (meetingFreq && meetingFreq !== "-")
+              stats.meetingFreq[meetingFreq] = (stats.meetingFreq[meetingFreq] || 0) + 1;
+            if (approvalStatus && approvalStatus !== "-")
+              stats.approvalStatus[approvalStatus] = (stats.approvalStatus[approvalStatus] || 0) + 1;
+
+            if (formationDate && isCurrentFY(formationDate)) {
+              stats.fyFormed++;
+              const monthKey = formationDate.toLocaleString("default", { month: "short", year: "numeric" });
+              stats.fyMonthly[monthKey] = (stats.fyMonthly[monthKey] || 0) + 1;
+
+              if (specialType === "-" || specialType === "" || specialType.toLowerCase() === "undefined") {
+                stats.fyWomanRegular++;
+              } else {
+                stats.fySpecial++;
+                stats.fySpecialTypes[specialType] = (stats.fySpecialTypes[specialType] || 0) + 1;
+              }
+            }
+
+            if (formationDate) {
+              const year = formationDate.getFullYear();
+              if (year >= 2015 && year <= 2026) stats.fyYearly[year] = (stats.fyYearly[year] || 0) + 1;
+            }
+
+            if (!stats.blocks[block]) {
+              stats.blocks[block] = {
+                total: 0,
+                members: 0,
+                savings: 0,
+                bankLinked: 0,
+                fyFormed: 0,
+                fyWoman: 0,
+                fySpecial: 0,
+                womanLow: 0,
+                specialLow: 0,
+              };
+            }
+            stats.blocks[block].total++;
+            stats.blocks[block].members += members;
+            stats.blocks[block].savings += savings;
+            if (hasBank) stats.blocks[block].bankLinked++;
+            if (formationDate && isCurrentFY(formationDate)) {
+              stats.blocks[block].fyFormed++;
+              if (specialType === "-" || specialType === "") stats.blocks[block].fyWoman++;
+              else stats.blocks[block].fySpecial++;
+            }
+
+            const isWomanReg = specialType === "-" || specialType === "" || specialType.toLowerCase() === "undefined";
+            if (isWomanReg && members < 12 && members > 0) {
+              stats.memberCompliance.womanLow++;
+              stats.memberCompliance.total++;
+              stats.blocks[block].womanLow++;
+            } else if (!isWomanReg && members < 5 && members > 0) {
+              stats.memberCompliance.specialLow++;
+              stats.memberCompliance.total++;
+              stats.blocks[block].specialLow++;
+            }
+
+            if (bankName && bankName !== "-") {
+              stats.banks[bankName] = (stats.banks[bankName] || 0) + 1;
+              if (branchName && branchName !== "-") {
+                const branchKey = `${block}|||${bankName}|||${branchName}`;
+                stats.branches[branchKey] = (stats.branches[branchKey] || 0) + 1;
+              }
+            }
+
+            if (primaryLivelihood && primaryLivelihood !== "-")
+              stats.livelihoods[primaryLivelihood] = (stats.livelihoods[primaryLivelihood] || 0) + 1;
+
+            if (district) stats.geoData.districts[district] = (stats.geoData.districts[district] || 0) + 1;
+            if (gp) stats.geoData.gramPanchayats[gp] = (stats.geoData.gramPanchayats[gp] || 0) + 1;
+            if (village) stats.geoData.villages[village] = (stats.geoData.villages[village] || 0) + 1;
+          } else {
+            stats.inactive++;
+          }
+        }
+
+        let approvalTotal = 0;
+        let approvedCount = 0;
+        for (const [key, value] of Object.entries(stats.approvalStatus)) {
+          approvalTotal += value;
+          const lower = key.toLowerCase();
+          if (lower.includes("approve") || lower === "yes" || lower === "approved") {
+            approvedCount += value;
+          }
+        }
+        stats.approvalRate = approvalTotal > 0 ? (approvedCount / approvalTotal) * 100 : 0;
+        stats.bankCoverage = stats.active > 0 ? (stats.bankLinked / stats.active) * 100 : 0;
+
+        return stats;
+      }
+
+      function renderOverview(stats) {
+        const colors = getThemeColors();
+        const approvalRate = stats.approvalRate || 0;
+        const bankCoverage = stats.bankCoverage || 0;
+        const blocksCovered = Object.keys(stats.blocks).length;
+
+        document.getElementById("overviewSection").innerHTML = `
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <div class="section-icon">📊</div>
+                        <div>
+                            <h3 class="section-title">SHG Overview</h3>
+                            <p class="section-subtitle">Overall coverage, activity, and financial position</p>
+                        </div>
+                    </div>
+                    <div class="export-buttons">
+                        <button class="btn-export" onclick="exportToCSV('overview')">📥 CSV</button>
+                        <button class="btn-export" onclick="exportToPDF('overview')">📄 PDF</button>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🏘️</div>
+                        <div class="stat-value">${stats.total.toLocaleString()}</div>
+                        <div class="stat-label">Total SHGs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-value">${stats.active.toLocaleString()}</div>
+                        <div class="stat-label">Active SHGs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏸️</div>
+                        <div class="stat-value">${stats.inactive.toLocaleString()}</div>
+                        <div class="stat-label">Inactive SHGs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-value">${stats.totalMembers.toLocaleString()}</div>
+                        <div class="stat-label">Total Members</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-value">₹${formatNumber(stats.totalSavings)}</div>
+                        <div class="stat-label">Total Savings</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📌</div>
+                        <div class="stat-value">${blocksCovered}</div>
+                        <div class="stat-label">Blocks Covered</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-value">${approvalRate.toFixed(1)}%</div>
+                        <div class="stat-label">Approval Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🏦</div>
+                        <div class="stat-value">${bankCoverage.toFixed(1)}%</div>
+                        <div class="stat-label">Bank Coverage</div>
+                    </div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h4>🟢 Active vs Inactive</h4>
+                        <canvas id="overviewStatusChart" aria-label="Active vs Inactive SHG status chart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h4>🏦 Bank Coverage</h4>
+                        <canvas id="overviewBankChart" aria-label="Bank coverage chart"></canvas>
+                    </div>
+                </div>
+            `;
+
+        if (charts.overviewStatus) charts.overviewStatus.destroy();
+        charts.overviewStatus = new Chart(document.getElementById("overviewStatusChart").getContext("2d"), {
+          type: "doughnut",
+          data: {
+            labels: ["Active", "Inactive"],
+            datasets: [
+              {
+                data: [stats.active, stats.inactive],
+                backgroundColor: [colors.success, colors.danger],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: "bottom", labels: { color: colors.text, font: { size: 11 } } },
+              datalabels: {
+                color: "#fff",
+                formatter: (v) => v.toLocaleString(),
+                font: { size: 10 },
+              },
+            },
+          },
+        });
+
+        if (charts.overviewBank) charts.overviewBank.destroy();
+        charts.overviewBank = new Chart(document.getElementById("overviewBankChart").getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: ["Linked", "Not Linked"],
+            datasets: [
+              {
+                data: [stats.bankLinked, Math.max(stats.active - stats.bankLinked, 0)],
+                backgroundColor: [colors.accent, colors.warning],
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              datalabels: {
+                color: colors.text,
+                anchor: "end",
+                align: "top",
+                formatter: (v) => v.toLocaleString(),
+                font: { size: 10 },
+              },
+            },
+            scales: {
+              x: { ticks: { color: colors.text }, grid: { display: false } },
+              y: { ticks: { color: colors.text }, grid: { color: colors.grid } },
+            },
+          },
+        });
+      }
+
+      function renderFYSectionWithFYData(fyStats, fyLabel, yearlyData) {
+        const colors = getThemeColors();
+        const specialEntries = Object.entries(fyStats.fySpecialTypes).sort((a, b) => b[1] - a[1]);
+        const typeLabels = ["Woman Regular", ...specialEntries.map((e) => e[0])];
+        const typeData = [fyStats.fyWomanRegular, ...specialEntries.map((e) => e[1])];
+        const blocksArr = Object.entries(fyStats.blocks).filter(([_, d]) => d.fyFormed > 0);
+        const fyTotal = { woman: 0, special: 0, formed: 0 };
+        blocksArr.forEach(([_, d]) => { fyTotal.woman += d.fyWoman; fyTotal.special += d.fySpecial; fyTotal.formed += d.fyFormed; });
+
+        const fyOptions = [];
+        for (let y = 2015; y <= 2026; y++) {
+          const opt = `${y}-${String(y + 1).slice(-2)}`;
+          const sel = opt === selectedFY ? "selected" : "";
+          fyOptions.push(`<option value="${opt}" ${sel}>${opt}</option>`);
+        }
+
+        document.getElementById("fyFormationSection").innerHTML = `
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <div class="section-icon">📅</div>
+                        <div>
+                            <h3 class="section-title">FY ${fyLabel} Formation Analysis</h3>
+                            <p class="section-subtitle">New SHG registrations during financial year ${fyLabel}</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                        <select id="fySelector" onchange="onFYChange(this.value)" style="padding:10px 14px;font-family:var(--font-primary);font-size:0.85rem;border-radius:var(--radius-md);border:1px solid var(--border-primary);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer">
+                            ${fyOptions.join("")}
+                        </select>
+                        ${statusFilterHTML('fyFormation')}
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="exportToCSV('fyFormation')">📥 CSV</button>
+                            <button class="btn-export" onclick="exportToPDF('fyFormation')">📄 PDF</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value">${fyStats.fyFormed}</div><div class="stat-label">Total FY Formed</div></div>
+                    <div class="stat-card"><div class="stat-icon">👩</div><div class="stat-value">${fyStats.fyWomanRegular}</div><div class="stat-label">Woman Regular</div></div>
+                    <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-value">${fyStats.fySpecial}</div><div class="stat-label">Special SHGs</div></div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card"><h4>👩 Woman Regular vs Special</h4><canvas id="fyTypeChart" aria-label="Woman regular vs special SHG type chart"></canvas></div>
+                    <div class="chart-card"><h4>📈 Monthly Trend</h4><canvas id="fyTrendChart" aria-label="Monthly formation trend chart"></canvas></div>
+                    <div class="chart-card"><h4>📊 Yearly History</h4><canvas id="fyYearlyChart" aria-label="Yearly formation history chart"></canvas></div>
+                </div>
+                <div class="table-container"><table id="fyFormationTable"><thead><tr><th>Block</th><th>Woman Reg</th><th>Special</th><th>Total</th></tr></thead><tbody>${blocksArr
+                  .sort((a, b) => b[1].fyFormed - a[1].fyFormed)
+                  .map(
+                    ([block, data]) =>
+                      `<tr><td>${block}</td><td>${data.fyWoman}</td><td>${data.fySpecial}</td><td class="badge-excellent">${data.fyFormed}</td></tr>`,
+                  )
+                  .join("")}
+                  <tr class="total-row"><td><strong>Total</strong></td><td><strong>${fyTotal.woman}</strong></td><td><strong>${fyTotal.special}</strong></td><td><strong>${fyTotal.formed}</strong></td></tr></tbody></table></div>
+            `;
+
+        if (charts.fyType) charts.fyType.destroy();
+        charts.fyType = new Chart(document.getElementById("fyTypeChart").getContext("2d"), {
+          type: "doughnut",
+          data: {
+            labels: typeLabels,
+            datasets: [
+              {
+                data: typeData,
+                backgroundColor: [
+                  colors.success,
+                  colors.primary,
+                  colors.warning,
+                  colors.purple,
+                  colors.cyan,
+                  colors.pink,
+                ],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: "right", labels: { color: colors.text, font: { size: 10 } } },
+              datalabels: { color: "#fff", formatter: (v) => v, font: { size: 10 } },
+            },
+          },
+        });
+
+        const monthlyData = Object.entries(fyStats.fyMonthly).sort((a, b) => new Date(a[0]) - new Date(b[0]));
+        if (charts.fyTrend) charts.fyTrend.destroy();
+        charts.fyTrend = new Chart(document.getElementById("fyTrendChart").getContext("2d"), {
+          type: "line",
+          data: {
+            labels: monthlyData.map((m) => m[0]),
+            datasets: [
+              {
+                label: "SHGs Formed",
+                data: monthlyData.map((m) => m[1]),
+                borderColor: colors.accent,
+                backgroundColor: colors.accent + "33",
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: colors.accent,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { labels: { color: colors.text } }, datalabels: { display: false } },
+            scales: {
+              x: { ticks: { color: colors.text }, grid: { color: colors.grid } },
+              y: { ticks: { color: colors.text }, grid: { color: colors.grid } },
+            },
+          },
+        });
+
+        const yearlyDataArr = Object.entries(yearlyData || {}).sort((a, b) => a[0] - b[0]);
+        if (charts.fyYearly) charts.fyYearly.destroy();
+        charts.fyYearly = new Chart(document.getElementById("fyYearlyChart").getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: yearlyDataArr.map((y) => y[0]),
+            datasets: [
+              { label: "SHGs", data: yearlyDataArr.map((y) => y[1]), backgroundColor: colors.primary, borderRadius: 6 },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              datalabels: { color: colors.text, anchor: "end", align: "top", font: { size: 10 } },
+            },
+            scales: {
+              x: { ticks: { color: colors.text }, grid: { display: false } },
+              y: { ticks: { color: colors.text }, grid: { color: colors.grid } },
+            },
+          },
+        });
+      }
+
+      function renderFYSection(stats) {
+        const fyStats = computeFYStats(originalData, "2025-26");
+        renderFYSectionWithFYData(fyStats, "2025-26", stats.fyYearly);
+      }
+
+      function onFYChange(fy) {
+        selectedFY = fy;
+        const fyStatus = tableStatusFilters.fyFormation || '';
+        const data = fyStatus ? originalData.filter(r => r.status === fyStatus) : originalData;
+        const fyStats = computeFYStats(data, fy);
+        const filteredStats = fyStatus ? analyzeData(data) : analyzedStats;
+        const yearlyData = filteredStats ? filteredStats.fyYearly : {};
+        renderFYSectionWithFYData(fyStats, fy, yearlyData);
+      }
+
+      function renderFinancialSection(stats) {
+        const colors = getThemeColors();
+        const avgSavings = stats.active > 0 ? Math.round(stats.totalSavings / stats.active) : 0;
+        const maxSavingsBlock = Object.entries(stats.blocks).sort((a, b) => b[1].savings - a[1].savings)[0];
+        const finBlocks = Object.entries(stats.blocks);
+        const finTotal = { total: 0, savings: 0 };
+        finBlocks.forEach(([_, d]) => { finTotal.total += d.total; finTotal.savings += d.savings; });
+
+        document.getElementById("financialSection").innerHTML = `
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <div class="section-icon">💰</div>
+                        <div>
+                            <h3 class="section-title">Financial Health Analysis</h3>
+                            <p class="section-subtitle">Savings distribution and financial metrics</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        ${statusFilterHTML('financial')}
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="exportToCSV('financial')">📥 CSV</button>
+                            <button class="btn-export" onclick="exportToPDF('financial')">📄 PDF</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">₹${formatNumber(stats.totalSavings)}</div><div class="stat-label">Total Savings</div></div>
+                    <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-value">₹${formatNumber(avgSavings)}</div><div class="stat-label">Avg per SHG</div></div>
+                    <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-value">${maxSavingsBlock ? maxSavingsBlock[0] : "-"}</div><div class="stat-label">Top Block</div></div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card"><h4>💰 Savings Distribution</h4><canvas id="savingsDistChart" aria-label="Savings distribution chart"></canvas></div>
+                    <div class="chart-card"><h4>📊 Block-wise Savings</h4><canvas id="blockSavingsChart" aria-label="Block-wise savings chart"></canvas></div>
+                </div>
+                <div class="table-container"><table id="financialTable"><thead><tr><th>Block</th><th>SHGs</th><th>Total Savings</th><th>Avg Savings</th></tr></thead><tbody>${finBlocks
+                  .sort((a, b) => b[1].savings - a[1].savings)
+                  .map(
+                    ([block, data]) =>
+                      `<tr><td>${block}</td><td>${data.total}</td><td>₹${formatNumber(data.savings)}</td><td>₹${formatNumber(data.total > 0 ? Math.round(data.savings / data.total) : 0)}</td></tr>`,
+                  )
+                  .join("")}
+                  <tr class="total-row"><td><strong>Total</strong></td><td><strong>${finTotal.total}</strong></td><td><strong>₹${formatNumber(finTotal.savings)}</strong></td><td><strong>₹${formatNumber(finTotal.total > 0 ? Math.round(finTotal.savings / finTotal.total) : 0)}</strong></td></tr></tbody></table></div>
+            `;
+
+        if (charts.savingsDist) charts.savingsDist.destroy();
+        charts.savingsDist = new Chart(document.getElementById("savingsDistChart").getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: Object.keys(stats.savingsBrackets),
+            datasets: [
+              {
+                label: "SHGs",
+                data: Object.values(stats.savingsBrackets),
+                backgroundColor: [
+                  colors.danger,
+                  colors.warning,
+                  colors.primary,
+                  colors.success,
+                  colors.purple,
+                  colors.cyan,
+                ],
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              datalabels: { color: colors.text, anchor: "end", align: "top", font: { size: 10 } },
+            },
+            scales: {
+              x: { ticks: { color: colors.text }, grid: { display: false } },
+              y: { ticks: { color: colors.text }, grid: { color: colors.grid } },
+            },
+          },
+        });
+
+        const blockSavings = Object.entries(stats.blocks)
+          .sort((a, b) => b[1].savings - a[1].savings)
+          .slice(0, 10);
+        if (charts.blockSavings) charts.blockSavings.destroy();
+        charts.blockSavings = new Chart(document.getElementById("blockSavingsChart").getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: blockSavings.map((b) => b[0]),
+            datasets: [
+              {
+                label: "Savings",
+                data: blockSavings.map((b) => b[1].savings),
+                backgroundColor: colors.accent,
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              datalabels: { color: colors.text, formatter: (v) => "₹" + formatNumber(v), font: { size: 9 } },
+            },
+            scales: {
+              x: { ticks: { color: colors.text }, grid: { color: colors.grid } },
+              y: { ticks: { color: colors.text }, grid: { display: false } },
+            },
+          },
+        });
+      }
+
+      function renderBlockSection(stats) {
+        const colors = getThemeColors();
+        // Sort by Bank Linkage % Descending
+        const sortedBlocks = Object.entries(stats.blocks).sort((a, b) => {
+          const pctA = a[1].total > 0 ? a[1].bankLinked / a[1].total : 0;
+          const pctB = b[1].total > 0 ? b[1].bankLinked / b[1].total : 0;
+          return pctB - pctA;
+        });
+        const blockTotal = { total: 0, bankLinked: 0, members: 0, fyFormed: 0 };
+        Object.values(stats.blocks).forEach((d) => { blockTotal.total += d.total; blockTotal.bankLinked += d.bankLinked; blockTotal.members += d.members; blockTotal.fyFormed += d.fyFormed; });
+        const blockBankPct = blockTotal.total > 0 ? ((blockTotal.bankLinked / blockTotal.total) * 100).toFixed(0) : 0;
+
+        document.getElementById("blockSection").innerHTML = `
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <div class="section-icon">🏘️</div>
+                        <div>
+                            <h3 class="section-title">Block-wise Performance</h3>
+                            <p class="section-subtitle">Comprehensive analysis by administrative blocks</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        ${statusFilterHTML('block')}
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="exportToCSV('block')">📥 CSV</button>
+                            <button class="btn-export" onclick="exportToPDF('block')">📄 PDF</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="search-filter">
+                    <input type="text" class="search-input" id="blockSearch" placeholder="🔍 Search blocks..." onkeyup="filterTable('blockTable', this.value)" />
+                    <select class="filter-select" onchange="filterTableByStatus('blockTable', this.value)">
+                        <option value="">All Status</option>
+                        <option value="excellent">Excellent (>90%)</option>
+                        <option value="good">Good (70-90%)</option>
+                        <option value="poor">Needs Focus (<70%)</option>
+                    </select>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card"><h4>🏘️ Top 10 Blocks</h4><canvas id="blockBarChart" aria-label="Top 10 blocks chart"></canvas></div>
+                    <div class="chart-card"><h4>🏦 Bank Linkage by Block</h4><canvas id="blockBankChart" aria-label="Bank linkage by block chart"></canvas></div>
+                </div>
+                <div class="table-container"><table id="blockTable"><thead><tr><th>Block</th><th>Total</th><th>Bank Linked</th><th>Bank %</th><th>Members</th><th>FY Formed</th><th>Status</th></tr></thead><tbody>${sortedBlocks
+                  .map(([block, data]) => {
+                    const bankPct = data.total > 0 ? ((data.bankLinked / data.total) * 100).toFixed(0) : 0;
+                    const status =
+                      bankPct >= 90
+                        ? '<span class="badge-excellent">Excellent</span>'
+                        : bankPct >= 70
+                          ? '<span class="badge-good">Good</span>'
+                          : '<span class="badge-poor">Needs Focus</span>';
+                    const statusClass = bankPct >= 90 ? "excellent" : bankPct >= 70 ? "good" : "poor";
+                    return `<tr data-status="${statusClass}"><td>${block}</td><td>${data.total}</td><td>${data.bankLinked}</td><td>${bankPct}%</td><td>${data.members.toLocaleString()}</td><td>${data.fyFormed}</td><td>${status}</td></tr>`;
+                  })
+                  .join("")}
+                  <tr class="total-row"><td><strong>Total</strong></td><td><strong>${blockTotal.total}</strong></td><td><strong>${blockTotal.bankLinked}</strong></td><td><strong>${blockBankPct}%</strong></td><td><strong>${blockTotal.members.toLocaleString()}</strong></td><td><strong>${blockTotal.fyFormed}</strong></td><td></td></tr></tbody></table></div>
+            `;
+
+        const top10 = sortedBlocks.slice(0, 10);
+        if (charts.blockBar) charts.blockBar.destroy();
+        charts.blockBar = new Chart(document.getElementById("blockBarChart").getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: top10.map((b) => b[0]),
+            datasets: [
+              { label: "Total", data: top10.map((b) => b[1].total), backgroundColor: colors.accent, borderRadius: 6 },
+              {
+                label: "Bank Linked",
+                data: top10.map((b) => b[1].bankLinked),
+                backgroundColor: colors.primary,
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { labels: { color: colors.text } }, datalabels: { display: false } },
+            scales: {
+              x: { ticks: { color: colors.text }, grid: { display: false } },
+              y: { ticks: { color: colors.text }, grid: { color: colors.grid } },
+            },
+          },
+        });
+
+        if (charts.blockBank) charts.blockBank.destroy();
+        charts.blockBank = new Chart(document.getElementById("blockBankChart").getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: top10.map((b) => b[0]),
+            datasets: [
+              {
+                label: "Bank %",
+                data: top10.map((b) => (b[1].total > 0 ? ((b[1].bankLinked / b[1].total) * 100).toFixed(1) : 0)),
+                backgroundColor: top10.map((b) => {
+                  const pct = b[1].total > 0 ? (b[1].bankLinked / b[1].total) * 100 : 0;
+                  return pct >= 90 ? colors.success : pct >= 70 ? colors.warning : colors.danger;
+                }),
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              datalabels: { color: colors.text, formatter: (v) => v + "%", font: { size: 10 } },
+            },
+            scales: {
+              x: { max: 100, ticks: { color: colors.text }, grid: { color: colors.grid } },
+              y: { ticks: { color: colors.text }, grid: { display: false } },
+            },
+          },
+        });
+      }
+
+      function renderBankSection(stats) {
+        const colors = getThemeColors();
+        const bankArray = Object.entries(stats.banks).sort((a, b) => b[1] - a[1]);
+        const bankTotalAccounts = bankArray.reduce((s, b) => s + b[1], 0);
+
+        document.getElementById("bankSection").innerHTML = `
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <div class="section-icon">🏦</div>
+                        <div>
+                            <h3 class="section-title">Bank Linkage Analysis</h3>
+                            <p class="section-subtitle">Financial inclusion and banking partnerships</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        ${statusFilterHTML('bank')}
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="exportToCSV('bank')">📥 CSV</button>
+                            <button class="btn-export" onclick="exportToPDF('bank')">📄 PDF</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon">🏦</div><div class="stat-value">${bankArray.length}</div><div class="stat-label">Banks Connected</div></div>
+                    <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-value">${Object.keys(stats.branches).length}</div><div class="stat-label">Branch Locations</div></div>
+                    <div class="stat-card"><div class="stat-icon">🔗</div><div class="stat-value">${stats.bankLinked.toLocaleString()}</div><div class="stat-label">SHGs Linked</div></div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card"><h4>🏦 Top Banks</h4><canvas id="bankPieChart" aria-label="Top banks distribution chart"></canvas></div>
+                </div>
+                <div class="table-container"><table id="bankTable"><thead><tr><th>#</th><th>Bank</th><th>Accounts</th></tr></thead><tbody>${bankArray.map((bank, i) => `<tr><td>${i + 1}</td><td>${bank[0]}</td><td class="badge-excellent">${bank[1]}</td></tr>`).join("")}
+                  <tr class="total-row"><td></td><td><strong>Total</strong></td><td><strong>${bankTotalAccounts}</strong></td></tr></tbody></table></div>
+            `;
+
+        const top8 = bankArray.slice(0, 8);
+        if (charts.bankPie) charts.bankPie.destroy();
+        charts.bankPie = new Chart(document.getElementById("bankPieChart").getContext("2d"), {
+          type: "doughnut",
+          data: {
+            labels: top8.map((b) => (b[0].length > 20 ? b[0].substring(0, 20) + "..." : b[0])),
+            datasets: [
+              {
+                data: top8.map((b) => b[1]),
+                backgroundColor: [
+                  colors.accent,
+                  colors.primary,
+                  colors.warning,
+                  colors.danger,
+                  colors.purple,
+                  colors.cyan,
+                  colors.pink,
+                  colors.success,
+                ],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: "right", labels: { color: colors.text, font: { size: 10 } } },
+              datalabels: { color: "#fff", formatter: (v) => v, font: { size: 10 } },
+            },
+          },
+        });
+      }
+
+      function renderMemberSection(stats) {
+        const colors = getThemeColors();
+        const complianceRate =
+          stats.active > 0 ? (((stats.active - stats.memberCompliance.total) / stats.active) * 100).toFixed(1) : 100;
+
+        document.getElementById("memberSection").innerHTML = `
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <div class="section-icon">👥</div>
+                        <div>
+                            <h3 class="section-title">Member Compliance Analysis</h3>
+                            <p class="section-subtitle">Minimum member requirements monitoring</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        ${statusFilterHTML('member')}
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="exportToCSV('member')">📥 CSV</button>
+                            <button class="btn-export" onclick="exportToPDF('member')">📄 PDF</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-value" style="color: var(--accent-crimson);">${stats.memberCompliance.total}</div><div class="stat-label">Non-Compliant</div></div>
+                    <div class="stat-card"><div class="stat-icon">👩</div><div class="stat-value">${stats.memberCompliance.womanLow}</div><div class="stat-label">Woman Reg (&lt;12)</div></div>
+                    <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-value">${stats.memberCompliance.specialLow}</div><div class="stat-label">Special (&lt;5)</div></div>
+                    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">${complianceRate}%</div><div class="stat-label">Compliance Rate</div></div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card"><h4>👥 Compliance Breakdown</h4><canvas id="memberChart" aria-label="Member compliance breakdown chart"></canvas></div>
+                </div>
+                <div class="table-container"><table id="memberTable"><thead><tr><th>Block</th><th>Woman Reg (&lt;12)</th><th>Special (&lt;5)</th><th>Total</th></tr></thead><tbody>${Object.entries(
+                  stats.blocks,
+                )
+                  .filter(([_, d]) => d.womanLow + d.specialLow > 0)
+                  .sort((a, b) => b[1].womanLow + b[1].specialLow - (a[1].womanLow + a[1].specialLow))
+                  .map(
+                    ([block, data]) =>
+                      `<tr><td>${block}</td><td>${data.womanLow}</td><td>${data.specialLow}</td><td class="badge-poor">${data.womanLow + data.specialLow}</td></tr>`,
+                  )
+                  .join("")}
+                  <tr class="total-row"><td><strong>Total</strong></td><td><strong>${stats.memberCompliance.womanLow}</strong></td><td><strong>${stats.memberCompliance.specialLow}</strong></td><td><strong>${stats.memberCompliance.total}</strong></td></tr></tbody></table></div>
+            `;
+
+        if (charts.member) charts.member.destroy();
+        charts.member = new Chart(document.getElementById("memberChart").getContext("2d"), {
+          type: "doughnut",
+          data: {
+            labels: ["Compliant", "Woman Reg Low", "Special Low"],
+            datasets: [
+              {
+                data: [
+                  stats.active - stats.memberCompliance.total,
+                  stats.memberCompliance.womanLow,
+                  stats.memberCompliance.specialLow,
+                ],
+                backgroundColor: [colors.success, colors.warning, colors.danger],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: "bottom", labels: { color: colors.text } },
+              datalabels: { color: "#fff", formatter: (v) => v, font: { weight: "600" } },
+            },
+          },
+        });
+      }
+
+      function renderLivelihoodSection(stats) {
+        const colors = getThemeColors();
+        const livArray = Object.entries(stats.livelihoods).sort((a, b) => b[1] - a[1]);
+        const totalWithLiv = livArray.reduce((sum, l) => sum + l[1], 0);
+
+        document.getElementById("livelihoodSection").innerHTML = `
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <div class="section-icon">🌾</div>
+                        <div>
+                            <h3 class="section-title">Livelihood Mapping</h3>
+                            <p class="section-subtitle">Economic activity distribution analysis</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        ${statusFilterHTML('livelihood')}
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="exportToCSV('livelihood')">📥 CSV</button>
+                            <button class="btn-export" onclick="exportToPDF('livelihood')">📄 PDF</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon">🌾</div><div class="stat-value">${livArray.length}</div><div class="stat-label">Unique Livelihoods</div></div>
+                    <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-value">${totalWithLiv.toLocaleString()}</div><div class="stat-label">SHGs with Data</div></div>
+                    <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-value">${livArray.length > 0 ? livArray[0][0].substring(0, 15) : "-"}</div><div class="stat-label">Top Livelihood</div></div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card"><h4>🌾 Top 10 Livelihoods</h4><canvas id="livelihoodChart" aria-label="Top 10 livelihoods chart"></canvas></div>
+                </div>
+                <div class="table-container"><table id="livelihoodTable"><thead><tr><th>#</th><th>Livelihood</th><th>Count</th><th>%</th></tr></thead><tbody>${livArray.map((liv, i) => `<tr><td>${i + 1}</td><td>${liv[0]}</td><td class="badge-excellent">${liv[1]}</td><td>${((liv[1] / totalWithLiv) * 100).toFixed(2)}%</td></tr>`).join("")}
+                  <tr class="total-row"><td></td><td><strong>Total</strong></td><td><strong>${totalWithLiv}</strong></td><td><strong>100.00%</strong></td></tr></tbody></table></div>
+            `;
+
+        const top10 = livArray.slice(0, 10);
+        if (charts.livelihood) charts.livelihood.destroy();
+        charts.livelihood = new Chart(document.getElementById("livelihoodChart").getContext("2d"), {
+          type: "doughnut",
+          data: {
+            labels: top10.map((l) => (l[0].length > 18 ? l[0].substring(0, 18) + "..." : l[0])),
+            datasets: [
+              {
+                data: top10.map((l) => l[1]),
+                backgroundColor: [
+                  colors.accent,
+                  colors.primary,
+                  colors.warning,
+                  colors.danger,
+                  colors.purple,
+                  colors.cyan,
+                  colors.pink,
+                  colors.success,
+                  "#84cc16",
+                  "#6366f1",
+                ],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: "right", labels: { color: colors.text, font: { size: 10 } } },
+              datalabels: {
+                color: "#fff",
+                formatter: (v, ctx) => {
+                  const pct = ((v / totalWithLiv) * 100).toFixed(1);
+                  return pct > 3 ? pct + "%" : "";
+                },
+                font: { size: 10 },
+              },
+            },
+          },
+        });
+      }
+
+      function renderGeoSection(stats) {
+        const bankPct = stats.active > 0 ? ((stats.bankLinked / stats.active) * 100).toFixed(1) : 0;
+        const avgSHGPerGP =
+          Object.keys(stats.geoData.gramPanchayats).length > 0
+            ? (stats.active / Object.keys(stats.geoData.gramPanchayats).length).toFixed(1)
+            : 0;
+        const avgSHGPerVillage =
+          Object.keys(stats.geoData.villages).length > 0
+            ? (stats.active / Object.keys(stats.geoData.villages).length).toFixed(1)
+            : 0;
+        const topGP = Object.entries(stats.geoData.gramPanchayats).sort((a, b) => b[1] - a[1])[0];
+        const topVillage = Object.entries(stats.geoData.villages).sort((a, b) => b[1] - a[1])[0];
+
+        document.getElementById("geoSection").innerHTML = `
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <div class="section-icon">🗺️</div>
+                        <div>
+                            <h3 class="section-title">Geographical Analysis</h3>
+                            <p class="section-subtitle">Spatial distribution and coverage mapping</p>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        ${statusFilterHTML('geo')}
+                        <div class="export-buttons">
+                            <button class="btn-export" onclick="exportToCSV('geo')">📥 CSV</button>
+                            <button class="btn-export" onclick="exportToPDF('geo')">📄 PDF</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-icon">🏛️</div><div class="stat-value">${Object.keys(stats.geoData.districts).length}</div><div class="stat-label">Districts</div></div>
+                    <div class="stat-card"><div class="stat-icon">🏘️</div><div class="stat-value">${Object.keys(stats.geoData.gramPanchayats).length}</div><div class="stat-label">Gram Panchayats</div></div>
+                    <div class="stat-card"><div class="stat-icon">🏠</div><div class="stat-value">${Object.keys(stats.geoData.villages).length}</div><div class="stat-label">Villages</div></div>
+                    <div class="stat-card"><div class="stat-icon">🏘️</div><div class="stat-value">${Object.keys(stats.blocks).length}</div><div class="stat-label">Blocks</div></div>
+                </div>
+                <div class="geo-grid">
+                    <div class="geo-map-container"><div id="map"></div></div>
+                    <div class="geo-insights">
+                        <div class="geo-insight-card"><div class="geo-insight-icon gold">📍</div><div class="geo-insight-content"><div class="geo-insight-value">${avgSHGPerGP}</div><div class="geo-insight-label">Avg SHGs per GP</div></div></div>
+                        <div class="geo-insight-card"><div class="geo-insight-icon blue">🏠</div><div class="geo-insight-content"><div class="geo-insight-value">${avgSHGPerVillage}</div><div class="geo-insight-label">Avg SHGs per Village</div></div></div>
+                        <div class="geo-insight-card"><div class="geo-insight-icon green">🏆</div><div class="geo-insight-content"><div class="geo-insight-value">${topGP ? topGP[0].substring(0, 18) : "-"}</div><div class="geo-insight-label">Top GP (${topGP ? topGP[1] : 0} SHGs)</div></div></div>
+                        <div class="geo-insight-card"><div class="geo-insight-icon purple">🏡</div><div class="geo-insight-content"><div class="geo-insight-value">${topVillage ? topVillage[0].substring(0, 18) : "-"}</div><div class="geo-insight-label">Top Village (${topVillage ? topVillage[1] : 0} SHGs)</div></div></div>
+                    </div>
+                </div>
+                <div class="table-container" style="margin-top: 24px;"><table id="geoTable"><thead><tr><th>#</th><th>Gram Panchayat</th><th>SHGs</th></tr></thead><tbody>${Object.entries(
+                  stats.geoData.gramPanchayats,
+                )
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 15)
+                  .map(([gp, count], i) => `<tr><td>${i + 1}</td><td>${gp}</td><td>${count}</td></tr>`)
+                  .join("")}
+                  <tr class="total-row"><td></td><td><strong>Total</strong></td><td><strong>${stats.active}</strong></td></tr></tbody></table></div>
+            `;
+
+        if (map) map.remove();
+        map = L.map("map").setView([11.1271, 78.6569], 8);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap" }).addTo(
+          map,
+        );
+
+        const blockCoords = {
+          ANDIMADAM: [11.2, 79.0],
+          ARIYALUR: [11.14, 79.07],
+          JAYANKONDAM: [11.22, 79.34],
+          SENDURAI: [11.28, 79.14],
+          THIRUMANUR: [11.12, 79.01],
+          "T.PALUR": [11.18, 79.12],
+          UDAYARPALAYAM: [11.2, 79.3],
+        };
+
+        Object.entries(stats.blocks).forEach(([block, data]) => {
+          const coords = blockCoords[block] || [11.1 + Math.random() * 0.3, 78.9 + Math.random() * 0.4];
+          const pct = data.total > 0 ? (data.bankLinked / data.total) * 100 : 0;
+          const marker = L.circleMarker(coords, {
+            radius: Math.min(Math.max(data.total / 50, 6), 20),
+            fillColor: pct > 90 ? "#059669" : pct > 70 ? "#f59e0b" : "#dc2626",
+            color: "#fff",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.85,
+          }).addTo(map);
+          marker.bindPopup(
+            `<div style="font-family: sans-serif;"><b>${block}</b><br>SHGs: ${data.total}<br>Bank: ${pct.toFixed(
+              1,
+            )}%<br>Savings: ₹${formatNumber(data.savings)}</div>`,
+          );
+        });
+      }
+
+      function renderInsightsSection(stats) {
+        const bankPct = stats.active > 0 ? (stats.bankLinked / stats.active) * 100 : 0;
+        const avgSavings = stats.active > 0 ? Math.round(stats.totalSavings / stats.active) : 0;
+        const complianceRate =
+          stats.active > 0 ? (((stats.active - stats.memberCompliance.total) / stats.active) * 100).toFixed(1) : 100;
+
+        const topBlocks = Object.entries(stats.blocks)
+          .sort((a, b) => b[1].total - a[1].total)
+          .slice(0, 3);
+        const topSavingsBlocks = Object.entries(stats.blocks)
+          .sort((a, b) => b[1].savings - a[1].savings)
+          .slice(0, 3);
+        const topLiv = Object.entries(stats.livelihoods)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3);
+        const weeklyMeetings = stats.meetingFreq["Weekly"] || 0;
+        const weeklyPct = stats.active > 0 ? ((weeklyMeetings / stats.active) * 100).toFixed(1) : 0;
+
+        const insights = [
+          {
+            type: "info",
+            text: `<strong>🏘️ Top Blocks:</strong> ${topBlocks.map((b) => `${b[0]} (${b[1].total})`).join(", ")}`,
+          },
+          {
+            type: "",
+            text: `<strong>💰 Savings Leaders:</strong> ${topSavingsBlocks.map((b) => `${b[0]} (₹${formatNumber(b[1].savings)})`).join(", ")}`,
+          },
+          {
+            type: "",
+            text: `<strong>📅 FY 25-26:</strong> ${stats.fyFormed} SHGs formed (${stats.fyWomanRegular} Woman Regular, ${stats.fySpecial} Special)`,
+          },
+          {
+            type: bankPct >= 90 ? "success" : bankPct >= 70 ? "warning" : "danger",
+            text:
+              bankPct >= 90
+                ? `<strong>✅ Excellent Bank Linkage:</strong> ${bankPct.toFixed(1)}%`
+                : `<strong>🏦 Bank Linkage:</strong> ${bankPct.toFixed(1)}%. ${stats.active - stats.bankLinked} SHGs need accounts.`,
+          },
+          {
+            type: stats.memberCompliance.total > 0 ? "danger" : "success",
+            text:
+              stats.memberCompliance.total > 0
+                ? `<strong>⚠️ Compliance:</strong> ${stats.memberCompliance.total} SHGs have low members (${complianceRate}% compliant)`
+                : `<strong>✅ Full Compliance:</strong> All SHGs meet requirements`,
+          },
+          {
+            type: "info",
+            text: `<strong>💰 Savings:</strong> Total ₹${formatNumber(stats.totalSavings)} | Avg ₹${formatNumber(avgSavings)} per SHG`,
+          },
+          { type: "", text: `<strong>📅 Meetings:</strong> ${weeklyPct}% weekly (${weeklyMeetings} groups)` },
+          {
+            type: "",
+            text: `<strong>🌾 Livelihoods:</strong> ${topLiv.map((l) => `${l[0]} (${l[1]})`).join(", ") || "No data"}`,
+          },
+          {
+            type: "info",
+            text: `<strong>🗺️ Coverage:</strong> ${Object.keys(stats.blocks).length} blocks, ${Object.keys(stats.geoData.gramPanchayats).length} GPs, ${Object.keys(stats.geoData.villages).length} villages`,
+          },
+        ];
+
+        document.getElementById("insightsSection").innerHTML = `
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <div class="section-icon">🤖</div>
+                        <div>
+                            <h3 class="section-title">AI-Powered Insights</h3>
+                            <p class="section-subtitle">Intelligent recommendations and analysis</p>
+                        </div>
+                    </div>
+                    <div class="export-buttons">
+                        <button class="btn-export" onclick="exportInsightsToPDF()">📄 Export Report</button>
+                    </div>
+                </div>
+                <div class="insights-grid">${insights.map((i) => `<div class="insight-card ${i.type}"><p>${i.text}</p></div>`).join("")}</div>
+            `;
+      }
+
+      function renderAllSections(stats) {
+        renderOverview(stats);
+        renderFYSection(stats);
+        renderFinancialSection(stats);
+        renderBlockSection(stats);
+        renderBankSection(stats);
+        renderMemberSection(stats);
+        renderLivelihoodSection(stats);
+        renderGeoSection(stats);
+        renderInsightsSection(stats);
+      }
+
+      // ============ FILTER FUNCTIONS ============
+      // Track per-table active status filter
+      let tableStatusFilters = {};
+
+      function applyStatusFilter(tableKey, status) {
+        tableStatusFilters[tableKey] = status;
+        const data = originalData;
+        const filtered = status ? data.filter(r => r.status === status) : data;
+        const filteredStats = analyzeData(filtered);
+        const sectionMap = {
+          fyFormation: () => {
+            selectedFY = selectedFY || "2025-26";
+            const fyStats = computeFYStats(filtered, selectedFY);
+            const yearlyData = filteredStats ? filteredStats.fyYearly : {};
+            renderFYSectionWithFYData(fyStats, selectedFY, yearlyData);
+          },
+          financial: () => renderFinancialSection(filteredStats),
+          block: () => renderBlockSection(filteredStats),
+          bank: () => renderBankSection(filteredStats),
+          member: () => renderMemberSection(filteredStats),
+          livelihood: () => renderLivelihoodSection(filteredStats),
+          geo: () => renderGeoSection(filteredStats),
+        };
+        if (sectionMap[tableKey]) sectionMap[tableKey]();
+      }
+
+      function statusFilterHTML(tableKey) {
+        const val = tableStatusFilters[tableKey] || '';
+        return '<select class="filter-select" onchange="applyStatusFilter(\'' + tableKey + '\', this.value)" style="min-width:130px">' +
+          '<option value="">Status: All</option>' +
+          '<option value="Active"' + (val === 'Active' ? ' selected' : '') + '>Active</option>' +
+          '<option value="Inactive"' + (val === 'Inactive' ? ' selected' : '') + '>Inactive</option>' +
+          '</select>';
+      }
+
+      function filterTable(tableId, searchText) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        table.querySelectorAll("tbody tr").forEach((row) => {
+          row.style.display = row.textContent.toLowerCase().includes(searchText.toLowerCase()) ? "" : "none";
+        });
+      }
+
+      function filterTableByStatus(tableId, status) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        table.querySelectorAll("tbody tr").forEach((row) => {
+          row.style.display = !status || row.dataset.status === status ? "" : "none";
+        });
+      }
+
+      // ============ EXPORT FUNCTIONS - FIXED ============
+
+      // Helper function to download file - with delayed cleanup
+      function downloadFile(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.style.display = "none";
+        document.body.appendChild(link);
+
+        // Use setTimeout to ensure the click event completes
+        setTimeout(() => {
+          link.click();
+
+          // Delay cleanup to allow download to start
+          setTimeout(() => {
+            if (link.parentNode) {
+              document.body.removeChild(link);
+            }
+            URL.revokeObjectURL(url);
+          }, 250);
+        }, 0);
+      }
+
+      // Get table ID mapping
+      function getTableIdForSection(section) {
+        const tableMap = {
+          overview: null,
+          fyFormation: "fyFormationTable",
+          financial: "financialTable",
+          block: "blockTable",
+          bank: "bankTable",
+          member: "memberTable",
+          livelihood: "livelihoodTable",
+          geo: "geoTable",
+          insights: null,
+        };
+        return tableMap[section] || null;
+      }
+
+      function exportToCSV(section) {
+        console.log("Exporting CSV for section:", section);
+
+        if (!analyzedStats) {
+          showToast("No data available. Please upload a file first.", true);
+          return;
+        }
+
+        let csvContent = "";
+        const dateStr = new Date().toISOString().split("T")[0];
+
+        // Handle overview section specially (no table)
+        if (section === "overview") {
+            const data = [
+              ["Metric", "Value"],
+              ["Total SHGs", analyzedStats.total],
+              ["Active SHGs", analyzedStats.active],
+              ["Inactive SHGs", analyzedStats.inactive],
+              ["Bank Linked", analyzedStats.bankLinked],
+              ["Bank Linkage %", analyzedStats.bankCoverage.toFixed(1) + "%"],
+              ["Approval Rate", analyzedStats.approvalRate.toFixed(1) + "%"],
+              ["Total Members", analyzedStats.totalMembers],
+              ["Total Savings", analyzedStats.totalSavings],
+              ["FY 2025-26 Formed", analyzedStats.fyFormed],
+              ["Blocks Covered", Object.keys(analyzedStats.blocks).length],
+            ];
+          csvContent = data
+            .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+            .join("\n");
+
+          const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+          downloadFile(blob, `SHG_Overview_${dateStr}.csv`);
+          showToast("Overview exported to CSV successfully!");
+          return;
+        }
+
+        // Handle insights section specially (no table)
+        if (section === "insights") {
+          const avgSavings =
+            analyzedStats.active > 0 ? Math.round(analyzedStats.totalSavings / analyzedStats.active) : 0;
+
+            const data = [
+              ["Insight Type", "Details"],
+              ["Total Active SHGs", analyzedStats.active],
+              ["Bank Linkage", analyzedStats.bankCoverage.toFixed(1) + "%"],
+              ["Approval Rate", analyzedStats.approvalRate.toFixed(1) + "%"],
+              ["Total Savings", "Rs." + formatNumber(analyzedStats.totalSavings)],
+              ["Avg Savings per SHG", "Rs." + formatNumber(avgSavings)],
+              ["FY 25-26 Formed", analyzedStats.fyFormed],
+              ["Non-Compliant SHGs", analyzedStats.memberCompliance.total],
+              ["Blocks Covered", Object.keys(analyzedStats.blocks).length],
+              ["GPs Covered", Object.keys(analyzedStats.geoData.gramPanchayats).length],
+              ["Villages Covered", Object.keys(analyzedStats.geoData.villages).length],
+            ];
+          csvContent = data
+            .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+            .join("\n");
+
+          const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+          downloadFile(blob, `SHG_Insights_${dateStr}.csv`);
+          showToast("Insights exported to CSV successfully!");
+          return;
+        }
+
+        // Find table by ID
+        const tableId = getTableIdForSection(section);
+        const table = tableId ? document.getElementById(tableId) : null;
+
+        if (!table) {
+          showToast("No table data found for this section.", true);
+          return;
+        }
+
+        // Extract table data
+        const rows = [];
+        table.querySelectorAll("tr").forEach((row) => {
+          const cols = row.querySelectorAll("td, th");
+          if (cols.length > 0) {
+            const rowData = Array.from(cols).map((col) => `"${col.textContent.trim().replace(/"/g, '""')}"`);
+            rows.push(rowData.join(","));
+          }
+        });
+
+        if (rows.length === 0) {
+          showToast("No data to export.", true);
+          return;
+        }
+
+        csvContent = rows.join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        downloadFile(blob, `SHG_${section}_${dateStr}.csv`);
+        showToast(`${section} data exported to CSV successfully!`);
+      }
+
+      function exportToPDF(section) {
+        console.log("Exporting PDF for section:", section);
+
+        if (!analyzedStats) {
+          showToast("No data available. Please upload a file first.", true);
+          return;
+        }
+
+        // Check if jsPDF is loaded
+        if (typeof window.jspdf === "undefined") {
+          showToast("PDF library not loaded. Please refresh the page.", true);
+          return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const dateStr = new Date().toISOString().split("T")[0];
+
+        // Header
+        doc.setFontSize(20);
+        doc.setTextColor(26, 54, 93);
+        doc.text("SHG Analytics Pro", 14, 20);
+
+        doc.setFontSize(14);
+        doc.setTextColor(212, 168, 83);
+        const sectionTitle = section.charAt(0).toUpperCase() + section.slice(1).replace(/([A-Z])/g, " $1");
+        doc.text(`${sectionTitle} Report`, 14, 30);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 38);
+
+        doc.setDrawColor(26, 54, 93);
+        doc.setLineWidth(0.5);
+        doc.line(14, 42, 196, 42);
+
+        // Handle overview section
+        if (section === "overview") {
+          let yPos = 52;
+          doc.setFontSize(11);
+          doc.setTextColor(0, 0, 0);
+
+          const metrics = [
+            ["Total SHGs", analyzedStats.total.toLocaleString()],
+            ["Active SHGs", analyzedStats.active.toLocaleString()],
+            ["Inactive SHGs", analyzedStats.inactive.toLocaleString()],
+            ["Bank Linked", analyzedStats.bankLinked.toLocaleString()],
+            ["Bank Linkage %", analyzedStats.bankCoverage.toFixed(1) + "%"],
+            ["Approval Rate", analyzedStats.approvalRate.toFixed(1) + "%"],
+            ["Total Members", analyzedStats.totalMembers.toLocaleString()],
+            ["Total Savings", "Rs. " + formatNumber(analyzedStats.totalSavings)],
+            ["FY 2025-26 Formed", analyzedStats.fyFormed.toLocaleString()],
+            ["Blocks Covered", Object.keys(analyzedStats.blocks).length.toString()],
+          ];
+
+          metrics.forEach(([label, value]) => {
+            doc.setFont(undefined, "bold");
+            doc.text(label + ":", 14, yPos);
+            doc.setFont(undefined, "normal");
+            doc.text(value, 80, yPos);
+            yPos += 10;
+          });
+
+          doc.save(`SHG_Overview_${dateStr}.pdf`);
+          showToast("Overview exported to PDF successfully!");
+          return;
+        }
+
+        // Handle insights section
+        if (section === "insights") {
+          let yPos = 52;
+          doc.setFontSize(11);
+          doc.setTextColor(0, 0, 0);
+
+          const bankPct =
+            analyzedStats.active > 0 ? ((analyzedStats.bankLinked / analyzedStats.active) * 100).toFixed(1) : 0;
+          const avgSavings =
+            analyzedStats.active > 0 ? Math.round(analyzedStats.totalSavings / analyzedStats.active) : 0;
+          const complianceRate =
+            analyzedStats.active > 0
+              ? (((analyzedStats.active - analyzedStats.memberCompliance.total) / analyzedStats.active) * 100).toFixed(
+                  1,
+                )
+              : 100;
+          const topBlocks = Object.entries(analyzedStats.blocks)
+            .sort((a, b) => b[1].total - a[1].total)
+            .slice(0, 3);
+
+          const insights = [
+            `Top Blocks: ${topBlocks.map((b) => b[0] + " (" + b[1].total + ")").join(", ")}`,
+            `FY 2025-26 Formation: ${analyzedStats.fyFormed} SHGs`,
+            `Bank Linkage: ${analyzedStats.bankCoverage.toFixed(1)}% (${analyzedStats.bankLinked} of ${analyzedStats.active} SHGs)`,
+            `Approval Rate: ${analyzedStats.approvalRate.toFixed(1)}% | Member Compliance: ${complianceRate}%`,
+            `Total Savings: Rs. ${formatNumber(analyzedStats.totalSavings)}`,
+            `Avg Savings per SHG: Rs. ${formatNumber(avgSavings)}`,
+            `Coverage: ${Object.keys(analyzedStats.blocks).length} blocks, ${Object.keys(analyzedStats.geoData.gramPanchayats).length} GPs`,
+          ];
+
+          insights.forEach((insight) => {
+            const lines = doc.splitTextToSize(insight, 180);
+            lines.forEach((line) => {
+              if (yPos > 270) {
+                doc.addPage();
+                yPos = 20;
+              }
+              doc.text(line, 14, yPos);
+              yPos += 8;
+            });
+            yPos += 4;
+          });
+
+          doc.save(`SHG_Insights_${dateStr}.pdf`);
+          showToast("Insights exported to PDF successfully!");
+          return;
+        }
+
+        // Find table for other sections
+        const tableId = getTableIdForSection(section);
+        const table = tableId ? document.getElementById(tableId) : null;
+
+        if (table && typeof doc.autoTable === "function") {
+          const headers = [];
+          const body = [];
+
+          const headerRow = table.querySelector("thead tr");
+          if (headerRow) {
+            headerRow.querySelectorAll("th").forEach((th) => headers.push(th.textContent.trim()));
+          }
+
+          table.querySelectorAll("tbody tr").forEach((row) => {
+            const rowData = [];
+            row.querySelectorAll("td").forEach((td) => rowData.push(td.textContent.trim()));
+            if (rowData.length > 0) body.push(rowData);
+          });
+
+          if (headers.length > 0 && body.length > 0) {
+            doc.autoTable({
+              head: [headers],
+              body: body,
+              startY: 50,
+              styles: { fontSize: 8, cellPadding: 3 },
+              headStyles: { fillColor: [26, 54, 93], textColor: [255, 255, 255], fontStyle: "bold" },
+              alternateRowStyles: { fillColor: [245, 245, 245] },
+              margin: { top: 50 },
+            });
+          }
+        } else {
+          doc.setFontSize(12);
+          doc.text("No table data available for this section.", 14, 55);
+        }
+
+        doc.save(`SHG_${section}_${dateStr}.pdf`);
+        showToast(`${section} data exported to PDF successfully!`);
+      }
+
+      function exportInsightsToPDF() {
+        exportToPDF("insights");
+      }
+
+      // ============ POPUP FUNCTIONS ============
+      function showSuccess() {
+        document.getElementById("overlay").style.display = "block";
+        const popup = document.getElementById("successPopup");
+        popup.style.display = "block";
+        setTimeout(() => popup.classList.add("show"), 10);
+      }
+
+      function closeSuccessPopup() {
+        document.getElementById("successPopup").classList.remove("show");
+        setTimeout(() => {
+          document.getElementById("successPopup").style.display = "none";
+          document.getElementById("overlay").style.display = "none";
+        }, 400);
+      }
+
+      // ============ MAIN PROCESS ============
+      function processExcel() {
+        const file = document.getElementById("excelFile").files[0];
+        if (!file) return alert("Please select an Excel (.xlsx/.xls) or CSV file");
+
+        const btn = document.getElementById("uploadBtn");
+        const spinner = document.getElementById("loadingSpinner");
+        const status = document.getElementById("statusText");
+
+        btn.disabled = true;
+        btn.textContent = "Analyzing...";
+        spinner.style.display = "block";
+        status.textContent = "Processing your file...";
+
+        const fileName = file.name.toLowerCase();
+        const isCSV = fileName.endsWith(".csv");
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            let rows;
+            if (isCSV) {
+              const csvData = e.target.result;
+              const wb = XLSX.read(csvData, { type: "string" });
+              const ws = wb.Sheets[wb.SheetNames[0]];
+              rows = XLSX.utils.sheet_to_json(ws, { defval: "", range: 0 });
+            } else {
+              const data = new Uint8Array(e.target.result);
+              const wb = XLSX.read(data, { type: "array" });
+              const ws = wb.Sheets[wb.SheetNames[0]];
+              rows = XLSX.utils.sheet_to_json(ws, { defval: "", range: 2 });
+            }
+            const cleaned = cleanData(rows);
+
+            if (!cleaned.length) throw new Error("No valid SHG records found");
+            originalData = cleaned;
+
+            setTimeout(() => {
+              Object.values(charts).forEach((chart) => {
+                if (chart && chart.destroy) chart.destroy();
+              });
+              charts = {};
+
+              analyzedStats = analyzeData(cleaned);
+              renderAllSections(analyzedStats);
+
+              // Show sidebar navigation, hide upload section
+              document.getElementById("navTabs").classList.add("visible");
+              document.getElementById("uploadSection").style.display = "none";
+              document.getElementById("sidebarLayout").style.display = "flex";
+              document.getElementById("overviewSection").classList.remove("hidden-section");
+
+              btn.disabled = false;
+              btn.textContent = "🔍 Analyze Data";
+              spinner.style.display = "none";
+              status.textContent = `✅ Processed ${analyzedStats.active.toLocaleString()} active SHGs`;
+
+              showSuccess();
+            }, 500);
+          } catch (error) {
+            alert("Error: " + error.message);
+            btn.disabled = false;
+            btn.textContent = "🔍 Analyze Data";
+            spinner.style.display = "none";
+            status.textContent = "❌ Error processing file";
+          }
+        };
+
+        if (isCSV) {
+          reader.readAsText(file);
+        } else {
+          reader.readAsArrayBuffer(file);
+        }
+      }
+    </script>
+  </body>
+</html>
