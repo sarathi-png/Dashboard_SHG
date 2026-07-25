@@ -1,0 +1,33 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "model": "opencode/deepseek-v4-flash-free",
+
+  "agent": {
+
+    "build": {
+      "model": "opencode/deepseek-v4-flash-free",
+      "mode": "primary",
+      "description": "Implementation agent. Receives a confirmed plan and executes it. No planning, no reviewing — just precise, production-quality implementation.",
+      "temperature": 0.6,
+      "maxSteps": 80,
+      "permission": {
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+
+    "plan": {
+      "model": "opencode/big-pickle",
+      "mode": "primary",
+      "description": "Architecture and planning agent. Reads all context files, analyzes requirements, and produces detailed implementation plans. Never writes code or modifies files.",
+      "temperature": 0.7,
+      "maxSteps": 30,
+      "permission": {
+        "edit": "ask",
+        "bash": "ask"
+      }
+    }
+
+  }
+}
